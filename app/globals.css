@@ -1,0 +1,115 @@
+:root {
+  --bg: #10161d;
+  --panel: #18212b;
+  --line: #2b3a49;
+  --text: #e8edf2;
+  --dim: #9fb0c0;
+  --faint: #7d8c9b;
+  --orange: #ff8a00;
+  --green: #5fd07f;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Barlow", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; }
+
+.display {
+  font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.container {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.btn {
+  background: var(--orange);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: 1px;
+  padding: 14px 28px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.btn:hover { background: #ffa033; }
+.btn:disabled { opacity: 0.6; cursor: default; }
+
+.ghost {
+  background: transparent;
+  border: 1px solid var(--orange);
+  color: var(--orange);
+  border-radius: 8px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 1px;
+  padding: 12px 24px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: background 0.15s ease;
+}
+.ghost:hover { background: rgba(255, 138, 0, 0.1); }
+
+input, select {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 13px 14px;
+  font-size: 15px;
+  font-family: "Barlow", sans-serif;
+  width: 100%;
+}
+input:focus, select:focus { outline: 2px solid var(--orange); }
+
+label {
+  font-size: 13px;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.notice-ok {
+  background: #1f3a26;
+  color: var(--green);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.notice-err {
+  background: #3a1f1f;
+  color: #ff9f9f;
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
