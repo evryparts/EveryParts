@@ -17,10 +17,83 @@ const ZONES = [
   { x: 350, y: 150, w: 60, h: 60, label: "Alloy Wheel" },
 ];
 
+// Irish county codes on number plates
+const COUNTY_CODES = {
+  C: "Cork", CE: "Clare", CN: "Cavan", CW: "Carlow", D: "Dublin",
+  DL: "Donegal", G: "Galway", KE: "Kildare", KK: "Kilkenny", KY: "Kerry",
+  L: "Limerick", LD: "Longford", LH: "Louth", LM: "Leitrim", LS: "Laois",
+  MH: "Meath", MN: "Monaghan", MO: "Mayo", OY: "Offaly", RN: "Roscommon",
+  SO: "Sligo", T: "Tipperary", W: "Waterford", WH: "Westmeath",
+  WX: "Wexford", WW: "Wicklow",
+};
+
+const MAKES = {
+  Volkswagen: ["Golf", "Passat", "Polo", "Tiguan", "Caddy", "Jetta", "Touran", "Other"],
+  Toyota: ["Corolla", "Yaris", "Avensis", "Auris", "RAV4", "C-HR", "Land Cruiser", "Other"],
+  Ford: ["Focus", "Fiesta", "Mondeo", "Kuga", "Transit", "Ranger", "Other"],
+  Hyundai: ["i30", "i20", "i10", "Tucson", "Santa Fe", "Kona", "Other"],
+  Nissan: ["Qashqai", "Juke", "Micra", "Note", "X-Trail", "Leaf", "Other"],
+  Skoda: ["Octavia", "Fabia", "Superb", "Kodiaq", "Rapid", "Other"],
+  Audi: ["A3", "A4", "A6", "Q3", "Q5", "Other"],
+  BMW: ["3 Series", "5 Series", "1 Series", "X3", "X5", "Other"],
+  "Mercedes-Benz": ["C-Class", "E-Class", "A-Class", "GLC", "Other"],
+  Opel: ["Astra", "Corsa", "Insignia", "Mokka", "Other"],
+  Peugeot: ["208", "308", "2008", "3008", "508", "Other"],
+  Renault: ["Clio", "Megane", "Captur", "Kadjar", "Other"],
+  Kia: ["Sportage", "Ceed", "Rio", "Niro", "Other"],
+  Mazda: ["Mazda3", "Mazda6", "CX-5", "Other"],
+  Other: ["Other"],
+};
+
+// Parse an Irish reg: 131-D-12345 / 08-KE-1234 / 142-WX-987
+function parseIrishReg(input) {
+  const cleaned = input.toUpperCase().replace(/[^A-Z0-9]/g, " ").trim();
+  const m = cleaned.match(/^(\d{2,3})\s*([A-Z]{1,2})\s*(\d{1,6})$/);
+  if (!m) return null;
+
+  const [, yearPart, countyCode, seq] = m;
+  const county = COUNTY_CODES[countyCode];
+  if (!county) return null;
+
+  let year, half = null;
+  if (yearPart.length === 3) {
+    // 2013+ format: 131 / 132
+    year = 2000 + parseInt(yearPart.slice(0, 2), 10);
+    half = yearPart[2] === "1" ? "Jan–Jun" : yearPart[2] === "2" ? "Jul–Dec" : null;
+    if (!half) return null;
+  } else {
+    // 1987–2012 format: two digits
+    const yy = parseInt(yearPart, 10);
+    year = yy >= 87 ? 1900 + yy : 2000 + yy;
+  }
+  if (year < 1987 || year > new Date().getFullYear() + 1) return null;
+
+  return { year, half, county, seq, reg: `${yearPart}-${countyCode}-${seq}` };
+}
+
 export default function Home() {
   const [email, setEmail] = useState("");
-  const [state, setState] = useState("idle"); // idle | sending | done | error
+  const [state, setState] = useState("idle");
   const [hovered, setHovered] = useState(null);
+
+  const [regInput, setRegInput] = useState("");
+  const [regInfo, setRegInfo] = useState(null);
+  const [regError, setRegError] = useState(false);
+  const [make, setMake] = useState("");
+  const [model, setModel] = useState("");
+
+  const lookup = () => {
+    const parsed = parseIrishReg(regInput);
+    if (!parsed) {
+      setRegError(true);
+      setRegInfo(null);
+      return;
+    }
+    setRegError(false);
+    setRegInfo(parsed);
+    setMake("");
+    setModel("");
+  };
 
   const join = async () => {
     const clean = email.trim().toLowerCase();
@@ -31,16 +104,18 @@ export default function Home() {
     setState("sending");
     const { error } = await supabase.from("launch_signups").insert({ email: clean });
     if (error && error.code !== "23505") {
-      // 23505 = already signed up — treat as success
       setState("error");
       return;
     }
     setState("done");
   };
 
+  const carLabel = regInfo
+    ? `${regInfo.year}${regInfo.half ? " (" + regInfo.half + ")" : ""}${make ? " " + make : ""}${model && model !== "Other" ? " " + model : ""} · ${regInfo.county} reg`
+    : null;
+
   return (
     <div>
-      {/* Header */}
       <header
         style={{
           padding: "16px 20px",
@@ -104,7 +179,130 @@ export default function Home() {
           No more ringing around.
         </p>
 
-        {/* The signature: clickable car teaser */}
+        {/* LIVE reg reader */}
+        <div className="panel" style={{ padding: 20, marginBottom: 18 }}>
+          <strong className="display" style={{ fontSize: 17, letterSpacing: 1, color: "var(--orange)" }}>
+            TRY IT — TYPE YOUR REG
+          </strong>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "stretch",
+                border: "2px solid var(--line)",
+                borderRadius: 8,
+                overflow: "hidden",
+                flex: "1 1 220px",
+                background: "#fff",
+              }}
+            >
+              <div
+                style={{
+                  background: "#003399",
+                  color: "#ffcc00",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "4px 8px",
+                  fontSize: 10,
+                  fontWeight: 700,
+                }}
+              >
+                <span>★</span>
+                <span>IRL</span>
+              </div>
+              <input
+                value={regInput}
+                onChange={(e) => {
+                  setRegInput(e.target.value);
+                  setRegError(false);
+                }}
+                onKeyDown={(e) => e.key === "Enter" && lookup()}
+                placeholder="141-D-12345"
+                aria-label="Registration number"
+                style={{
+                  border: "none",
+                  borderRadius: 0,
+                  fontSize: 20,
+                  fontWeight: 700,
+                  fontFamily: "'Barlow Condensed', sans-serif",
+                  letterSpacing: 2,
+                  color: "var(--bg)",
+                  textTransform: "uppercase",
+                  background: "#fff",
+                }}
+              />
+            </div>
+            <button className="btn" onClick={lookup} style={{ fontSize: 18 }}>
+              READ MY REG
+            </button>
+          </div>
+
+          {regError && (
+            <div className="notice-err" style={{ marginTop: 12 }}>
+              That doesn't look like an Irish reg — try the format 141-D-12345 or 08-KE-1234.
+            </div>
+          )}
+
+          {regInfo && (
+            <div style={{ marginTop: 14 }}>
+              <div
+                style={{
+                  background: "#1f3a26",
+                  color: "var(--green)",
+                  borderRadius: 10,
+                  padding: "12px 16px",
+                  fontWeight: 700,
+                  fontSize: 15,
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+              >
+                <span>✓ READ:</span>
+                <span>
+                  {regInfo.year}
+                  {regInfo.half ? ` (${regInfo.half})` : ""} · {regInfo.county} registered
+                </span>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
+                <div>
+                  <label htmlFor="make">Make</label>
+                  <select
+                    id="make"
+                    value={make}
+                    onChange={(e) => {
+                      setMake(e.target.value);
+                      setModel("");
+                    }}
+                  >
+                    <option value="">Select make…</option>
+                    {Object.keys(MAKES).map((m) => (
+                      <option key={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="model">Model</label>
+                  <select id="model" value={model} onChange={(e) => setModel(e.target.value)} disabled={!make}>
+                    <option value="">{make ? "Select model…" : "Pick make first"}</option>
+                    {make && MAKES[make].map((m) => <option key={m}>{m}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <p style={{ fontSize: 12, color: "var(--faint)", margin: "10px 0 0" }}>
+                At launch, full vehicle details (make, model, engine) will load
+                automatically from the reg.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Interactive car */}
         <div className="panel" style={{ padding: 20, marginBottom: 30 }}>
           <div
             style={{
@@ -117,7 +315,7 @@ export default function Home() {
             }}
           >
             <strong className="display" style={{ fontSize: 17, letterSpacing: 1, color: "var(--orange)" }}>
-              {hovered || "THIS IS HOW IT'LL WORK — TAP A PART"}
+              {hovered || (carLabel ? `YOUR CAR: ${carLabel.toUpperCase()} — TAP A PART` : "TAP A PART ON THE CAR")}
             </strong>
             <span style={{ fontSize: 12, color: "var(--faint)" }}>preview</span>
           </div>
