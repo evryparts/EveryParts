@@ -503,6 +503,10 @@ export default function Home() {
               That email didn't go through — check it and try again.
             </div>
           )}
+          <p style={{ fontSize: 11, color: "var(--faint)", margin: "12px 0 0" }}>
+            By joining you consent to us emailing you about the launch. Unsubscribe
+            any time. See our <a href="/privacy" style={{ color: "var(--faint)" }}>Privacy Policy</a>.
+          </p>
         </div>
 
         {/* Seller pitch */}
@@ -545,6 +549,12 @@ export default function Home() {
         }}
       >
         <span>© 2026 EveryPart.ie</span>
+        <a href="/terms" style={{ color: "var(--faint)" }}>
+          Terms
+        </a>
+        <a href="/privacy" style={{ color: "var(--faint)" }}>
+          Privacy
+        </a>
         <a href="mailto:info@everypart.ie" style={{ color: "var(--faint)" }}>
           info@everypart.ie
         </a>
