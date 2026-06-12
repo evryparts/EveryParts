@@ -17,6 +17,17 @@ const ZONES = [
   { x: 350, y: 150, w: 60, h: 60, label: "Alloy Wheel" },
 ];
 
+const ENGINE_ZONES = [
+  { x: 30, y: 26, w: 440, h: 24, label: "Radiator" },
+  { x: 55, y: 68, w: 90, h: 60, label: "Battery" },
+  { x: 170, y: 64, w: 160, h: 120, label: "Engine Cover" },
+  { x: 234, y: 84, w: 32, h: 32, label: "Oil Filler Cap" },
+  { x: 350, y: 68, w: 95, h: 64, label: "Air Filter Box" },
+  { x: 350, y: 144, w: 60, h: 50, label: "Washer Bottle" },
+  { x: 58, y: 140, w: 70, h: 54, label: "ECU" },
+  { x: 138, y: 148, w: 46, h: 46, label: "Alternator" },
+];
+
 // Irish county codes on number plates
 const COUNTY_CODES = {
   C: "Cork", CE: "Clare", CN: "Cavan", CW: "Carlow", D: "Dublin",
@@ -82,6 +93,10 @@ export default function Home() {
   const [state, setState] = useState("idle");
   const [hovered, setHovered] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [view, setView] = useState("body");
+
+  const [alertEmail, setAlertEmail] = useState("");
+  const [alertState, setAlertState] = useState("idle");
 
   const [regInput, setRegInput] = useState("");
   const [regInfo, setRegInfo] = useState(null);
@@ -111,6 +126,29 @@ export default function Home() {
     setMake("");
     setModel("");
     setSelected(null);
+    setView("body");
+    setAlertState("idle");
+  };
+
+  const saveAlert = async () => {
+    const clean = alertEmail.trim().toLowerCase();
+    if (!clean || !clean.includes("@")) {
+      setAlertState("error");
+      return;
+    }
+    setAlertState("sending");
+    const { error } = await supabase.from("part_alerts").insert({
+      email: clean,
+      part_category: selected,
+      car_make: make || null,
+      car_model: model && model !== "Other" ? model : null,
+      car_year: regInfo ? regInfo.year : null,
+    });
+    if (error && error.code !== "23505") {
+      setAlertState("error");
+      return;
+    }
+    setAlertState("done");
   };
 
   const join = async () => {
@@ -395,7 +433,32 @@ export default function Home() {
                   ? (hovered || selected).toUpperCase()
                   : `YOUR CAR: ${carLabel.toUpperCase()} — TAP A PART`}
               </strong>
-              <span style={{ fontSize: 12, color: "var(--faint)" }}>preview</span>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                {["body", "engine"].map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => {
+                      setView(v);
+                      setHovered(null);
+                      setSelected(null);
+                      setAlertState("idle");
+                    }}
+                    className="display"
+                    style={{
+                      background: view === v ? "var(--orange)" : "transparent",
+                      color: view === v ? "var(--bg)" : "var(--dim)",
+                      border: "1px solid " + (view === v ? "var(--orange)" : "var(--line)"),
+                      borderRadius: 6,
+                      padding: "3px 12px",
+                      fontSize: 14,
+                      letterSpacing: 1,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {v === "body" ? "BODY" : "ENGINE BAY"}
+                  </button>
+                ))}
+              </div>
             </div>
             <svg
               viewBox="0 0 500 230"
@@ -403,23 +466,50 @@ export default function Home() {
               role="img"
               aria-label="Interactive car preview — tap to highlight parts"
             >
-              <path
-                d="M30 160 L35 120 Q40 95 80 92 L120 88 Q140 60 175 55 L300 55 Q345 58 368 75 L420 88 Q460 95 465 125 L468 160 Z"
-                fill="var(--line)"
-                stroke="#3d4f61"
-                strokeWidth="2"
-              />
-              <path d="M150 88 Q160 64 180 62 L240 62 L240 88 Z" fill="#1a2630" />
-              <path d="M250 62 L300 62 Q330 64 348 80 L350 88 L250 88 Z" fill="#1a2630" />
-              <circle cx="140" cy="180" r="32" fill="var(--bg)" stroke="#3d4f61" strokeWidth="3" />
-              <circle cx="140" cy="180" r="14" fill="var(--line)" />
-              <circle cx="380" cy="180" r="32" fill="var(--bg)" stroke="#3d4f61" strokeWidth="3" />
-              <circle cx="380" cy="180" r="14" fill="var(--line)" />
-              <rect x="72" y="100" width="22" height="14" rx="3" fill="#3d4f61" />
-              <rect x="432" y="100" width="20" height="14" rx="3" fill="#552d2d" />
-              {ZONES.map((z, i) => (
+              {view === "body" ? (
+                <>
+                  <path
+                    d="M30 160 L35 120 Q40 95 80 92 L120 88 Q140 60 175 55 L300 55 Q345 58 368 75 L420 88 Q460 95 465 125 L468 160 Z"
+                    fill="var(--line)"
+                    stroke="#3d4f61"
+                    strokeWidth="2"
+                  />
+                  <path d="M150 88 Q160 64 180 62 L240 62 L240 88 Z" fill="#1a2630" />
+                  <path d="M250 62 L300 62 Q330 64 348 80 L350 88 L250 88 Z" fill="#1a2630" />
+                  <circle cx="140" cy="180" r="32" fill="var(--bg)" stroke="#3d4f61" strokeWidth="3" />
+                  <circle cx="140" cy="180" r="14" fill="var(--line)" />
+                  <circle cx="380" cy="180" r="32" fill="var(--bg)" stroke="#3d4f61" strokeWidth="3" />
+                  <circle cx="380" cy="180" r="14" fill="var(--line)" />
+                  <rect x="72" y="100" width="22" height="14" rx="3" fill="#3d4f61" />
+                  <rect x="432" y="100" width="20" height="14" rx="3" fill="#552d2d" />
+                </>
+              ) : (
+                <>
+                  <rect x="20" y="14" width="460" height="202" rx="16" fill="var(--line)" stroke="#3d4f61" strokeWidth="2" />
+                  <rect x="30" y="26" width="440" height="24" rx="5" fill="#1a2630" stroke="#3d4f61" strokeWidth="1.5" />
+                  <rect x="68" y="60" width="14" height="10" rx="2" fill="#3d4f61" />
+                  <rect x="118" y="60" width="14" height="10" rx="2" fill="#552d2d" />
+                  <rect x="55" y="68" width="90" height="60" rx="7" fill="#1a2630" stroke="#3d4f61" strokeWidth="2" />
+                  <rect x="170" y="64" width="160" height="120" rx="12" fill="#243240" stroke="#3d4f61" strokeWidth="2" />
+                  <line x1="190" y1="130" x2="310" y2="130" stroke="#3d4f61" strokeWidth="3" />
+                  <line x1="190" y1="150" x2="310" y2="150" stroke="#3d4f61" strokeWidth="3" />
+                  <line x1="190" y1="170" x2="310" y2="170" stroke="#3d4f61" strokeWidth="3" />
+                  <circle cx="250" cy="100" r="15" fill="#3d4f61" stroke="#1a2630" strokeWidth="2" />
+                  <path d="M350 100 L330 100" stroke="#3d4f61" strokeWidth="8" />
+                  <rect x="350" y="68" width="95" height="64" rx="8" fill="#1a2630" stroke="#3d4f61" strokeWidth="2" />
+                  <circle cx="365" cy="144" r="6" fill="#3d4f61" />
+                  <rect x="350" y="144" width="60" height="50" rx="8" fill="#1d2c3a" stroke="#3d4f61" strokeWidth="2" />
+                  <rect x="58" y="140" width="70" height="54" rx="6" fill="#1a2630" stroke="#3d4f61" strokeWidth="2" />
+                  <line x1="70" y1="194" x2="70" y2="202" stroke="#3d4f61" strokeWidth="3" />
+                  <line x1="85" y1="194" x2="85" y2="202" stroke="#3d4f61" strokeWidth="3" />
+                  <line x1="100" y1="194" x2="100" y2="202" stroke="#3d4f61" strokeWidth="3" />
+                  <circle cx="161" cy="171" r="23" fill="#1a2630" stroke="#3d4f61" strokeWidth="2" />
+                  <circle cx="161" cy="171" r="9" fill="#3d4f61" />
+                </>
+              )}
+              {(view === "body" ? ZONES : ENGINE_ZONES).map((z, i) => (
                 <rect
-                  key={i}
+                  key={view + i}
                   x={z.x}
                   y={z.y}
                   width={z.w}
@@ -440,7 +530,10 @@ export default function Home() {
                   }}
                   onMouseEnter={() => setHovered(z.label)}
                   onMouseLeave={() => setHovered(null)}
-                  onClick={() => setSelected(selected === z.label ? null : z.label)}
+                  onClick={() => {
+                    setSelected(selected === z.label ? null : z.label);
+                    setAlertState("idle");
+                  }}
                   aria-label={z.label}
                 />
               ))}
@@ -460,8 +553,45 @@ export default function Home() {
                 }}
               >
                 <strong style={{ color: "var(--orange)" }}>{selected}</strong> for
-                your {carLabel} — searches open at launch. Join the list below
-                and you'll be first in.
+                your {carLabel} — searches open at launch. Want first dibs?
+                We'll email you the moment one's listed.
+                {alertState === "done" ? (
+                  <div className="notice-ok" style={{ marginTop: 10 }}>
+                    ✓ Alert set — we'll email you when one comes in.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                    <input
+                      type="email"
+                      placeholder="you@example.com"
+                      value={alertEmail}
+                      onChange={(e) => {
+                        setAlertEmail(e.target.value);
+                        if (alertState === "error") setAlertState("idle");
+                      }}
+                      onKeyDown={(e) => e.key === "Enter" && saveAlert()}
+                      aria-label="Email for part alert"
+                      style={{ flex: "1 1 200px" }}
+                    />
+                    <button
+                      className="btn"
+                      onClick={saveAlert}
+                      disabled={alertState === "sending"}
+                      style={{ fontSize: 14 }}
+                    >
+                      {alertState === "sending" ? "SETTING…" : "ALERT ME"}
+                    </button>
+                  </div>
+                )}
+                {alertState === "error" && (
+                  <div className="notice-err" style={{ marginTop: 8 }}>
+                    That email didn't go through — check it and try again.
+                  </div>
+                )}
+                <p style={{ fontSize: 11, color: "var(--faint)", margin: "8px 0 0" }}>
+                  One email when a match is listed — that's it. See our{" "}
+                  <a href="/privacy" style={{ color: "var(--faint)" }}>Privacy Policy</a>.
+                </p>
               </div>
             )}
           </div>
