@@ -151,11 +151,30 @@ export default function Sell() {
             </button>
             <p style={{ fontSize: 12, color: "var(--faint)", margin: 0 }}>
               We'll only use these details to set up your seller account and
-              contact you about the launch.
+              contact you about the launch — see our{" "}
+              <a href="/privacy" style={{ color: "var(--faint)" }}>Privacy Policy</a> and{" "}
+              <a href="/terms" style={{ color: "var(--faint)" }}>Terms</a>.
             </p>
           </div>
         )}
       </main>
+
+      <footer
+        style={{
+          borderTop: "1px solid var(--line)",
+          padding: "18px 20px",
+          fontSize: 12,
+          color: "var(--faint)",
+          display: "flex",
+          gap: 18,
+          flexWrap: "wrap",
+        }}
+      >
+        <span>© 2026 EveryPart.ie</span>
+        <a href="/terms" style={{ color: "var(--faint)" }}>Terms</a>
+        <a href="/privacy" style={{ color: "var(--faint)" }}>Privacy</a>
+        <a href="mailto:info@everypart.ie" style={{ color: "var(--faint)" }}>info@everypart.ie</a>
+      </footer>
     </div>
   );
 }
